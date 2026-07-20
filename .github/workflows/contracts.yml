@@ -1,0 +1,87 @@
+name: Contracts CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "contracts/**"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "contracts/**"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32v1-none
+          components: clippy, rustfmt
+      - name: Run tests
+        run: |
+          cargo test --manifest-path contracts/mapa_game/Cargo.toml
+          cargo test --manifest-path contracts/mapa_location_vault/Cargo.toml
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32v1-none
+          components: clippy, rustfmt
+      - name: Clippy
+        run: |
+          cargo clippy --manifest-path contracts/mapa_game/Cargo.toml -- -D warnings
+          cargo clippy --manifest-path contracts/mapa_location_vault/Cargo.toml -- -D warnings
+      - name: Format
+        run: |
+          cargo fmt --manifest-path contracts/mapa_game/Cargo.toml --check
+          cargo fmt --manifest-path contracts/mapa_location_vault/Cargo.toml --check
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32v1-none
+      - name: Build WASM
+        run: |
+          cargo build --release --target wasm32-unknown-unknown --manifest-path contracts/mapa_game/Cargo.toml
+          cargo build --release --target wasm32-unknown-unknown --manifest-path contracts/mapa_location_vault/Cargo.toml
+      - name: Compute WASM hashes
+        run: |
+          sha256sum contracts/target/wasm32v1-none/release/mapa_game.wasm
+          sha256sum contracts/target/wasm32v1-none/release/mapa_location_vault.wasm
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-artifacts
+          path: contracts/target/wasm32v1-none/release/*.wasm
+
+  deploy-testnet:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: [test, lint, build]
+    runs-on: ubuntu-latest
+    environment: testnet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32v1-none
+      - name: Install Stellar CLI
+        run: |
+          curl -fsSL https://github.com/stellar/stellar-cli/releases/latest/download/stellar-cli-ubuntu-x64.tar.gz | tar xz
+          sudo mv stellar /usr/local/bin/
+      - name: Deploy to testnet
+        env:
+          SOROBAN_SECRET_KEY: ${{ secrets.SOROBAN_SECRET_KEY }}
+          TOKEN_ADDRESS: ${{ secrets.TOKEN_ADDRESS }}
+        run: ./scripts/deploy.sh

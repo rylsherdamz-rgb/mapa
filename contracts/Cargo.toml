@@ -1,0 +1,10 @@
+[workspace]
+members = ["mapa_game", "mapa_location_vault"]
+resolver = "2"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+lto = true
+debug = 0
+codegen-units = 1

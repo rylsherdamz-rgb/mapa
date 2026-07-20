@@ -1,0 +1,27 @@
+{
+  "network": "testnet",
+  "deployed_at": "",
+  "git_commit": "",
+  "deployer": "",
+  "contracts": {
+    "mapa_game": {
+      "id": "",
+      "wasm_sha256": "",
+      "src": "contracts/mapa_game/src/lib.rs",
+      "init_args": ["admin", "vault_address", "token_address"]
+    },
+    "mapa_location_vault": {
+      "id": "",
+      "wasm_sha256": "",
+      "src": "contracts/mapa_location_vault/src/lib.rs",
+      "init_args": ["admin"]
+    }
+  },
+  "build": {
+    "command": "cargo build --release --target wasm32-unknown-unknown",
+    "target": "wasm32v1-none",
+    "soroban_sdk": "27.0.0",
+    "stellar_cli": "",
+    "rustc": ""
+  }
+}
