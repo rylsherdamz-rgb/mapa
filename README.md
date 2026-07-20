@@ -37,8 +37,6 @@ Mapa is a decentralized geography guessing game built on **Stellar Soroban**. Pl
 |----------|---------|----------|
 | **MapaGame** | `CANFO7ESVUGOSWGVLSQ6ZJ5H6NYQ5YX3JV7HEOK2K3RFGA75WSUW3MVO` | [View](https://stellar.expert/explorer/testnet/contract/CANFO7ESVUGOSWGVLSQ6ZJ5H6NYQ5YX3JV7HEOK2K3RFGA75WSUW3MVO) |
 | **MapaLocationVault** | `CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB` | [View](https://stellar.expert/explorer/testnet/contract/CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB) |
-| **Token** (XLM native) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` | [View](https://stellar.expert/explorer/testnet/asset/XLM) |
-| **Admin** | `GBHBOPW5AMW5J6RRR4YU2NLJI3HRX7SG4Q4ZZBJILLDR3644INLHMMZZ` | [View](https://stellar.expert/explorer/testnet/account/GBHBOPW5AMW5J6RRR4YU2NLJI3HRX7SG4Q4ZZBJILLDR3644INLHMMZZ) |
 
 ### Deployment Screenshots
 
