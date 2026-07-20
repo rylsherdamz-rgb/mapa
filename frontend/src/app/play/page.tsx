@@ -242,12 +242,17 @@ export default function PlayPage() {
   }
 
   async function handleJoinRoom(targetId: number) {
-    setLoading(true);
     setMatchError(null);
     try {
       const r = await getRoom(targetId);
-      if (r.player2 !== null) { setMatchError("Room full"); setLoading(false); return; }
-      if (r.player1 === publicKey) { setMatchError("Can't join your own room"); setLoading(false); return; }
+      if (r.state >= RoomState.Completed) { setMatchError("Room already completed"); return; }
+      if (r.player1 === publicKey || r.player2 === publicKey) {
+        setLoading(false);
+        handleRejoin(targetId);
+        return;
+      }
+      if (r.player2 !== null) { setMatchError("Room full"); return; }
+      setLoading(true);
       await joinRoom(targetId, publicKey!, signTx);
       toast.success("Joined room", { description: "Room #" + targetId });
       setRoomId(targetId);
