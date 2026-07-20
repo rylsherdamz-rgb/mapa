@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Target, ArrowLeft, Coins, Trophy, Crosshair, Swords, Radio, Satellite, Search, Users, Clock, RotateCcw, LogOut } from "lucide-react";
+import { Loader2, Target, ArrowLeft, Coins, Trophy, Crosshair, Swords, Radio, Satellite, Search, Users, Clock, RotateCcw, LogOut, MapPin } from "lucide-react";
 import { WalletConnector } from "@/components/wallet/WalletConnector";
 import { StreetView } from "@/components/game/StreetView";
 import { MapView } from "@/components/game/MapView";
@@ -29,6 +29,12 @@ import {
 
 type Phase = "lobby" | "matching" | "playing" | "waiting" | "result";
 
+type LobbyTab = "match" | "browse" | "history";
+
+function shorten(pk: string) {
+  return pk.slice(0, 4) + ".." + pk.slice(-2);
+}
+
 export default function PlayPage() {
   const { isConnected, publicKey, signTx, connect } = useWallet();
   const [phase, setPhase] = useState<Phase>("lobby");
@@ -37,8 +43,8 @@ export default function PlayPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
   const [guess, setGuess] = useState<{ lat: number; lng: number } | null>(null);
-  const [stakeAmount, setStakeAmount] = useState<string>("10");
-  const [minStake, setMinStake] = useState<number>(1000000);
+  const [stakeAmount, setStakeAmount] = useState("10");
+  const [minStake, setMinStake] = useState(1000000);
   const [matchError, setMatchError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const waitingPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,62 +53,47 @@ export default function PlayPage() {
   const [searchRoomId, setSearchRoomId] = useState("");
   const [activeRooms, setActiveRooms] = useState<{ id: number; room: Room }[]>([]);
   const [completedRooms, setCompletedRooms] = useState<number[]>([]);
-  const lobbyPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [lobbyTab, setLobbyTab] = useState<LobbyTab>("match");
 
   useEffect(() => {
     getMinStake().then(setMinStake).catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!isConnected) {
-      handleReset();
-    }
+    if (!isConnected) handleReset();
   }, [publicKey]);
 
   useEffect(() => {
     if (phase === "lobby" && isConnected) {
       refreshLobby();
-      lobbyPollRef.current = setInterval(refreshLobby, 5000);
+      const id = setInterval(refreshLobby, 5000);
+      return () => clearInterval(id);
     }
-    return () => {
-      if (lobbyPollRef.current) clearInterval(lobbyPollRef.current);
-    };
   }, [phase, isConnected]);
 
   useEffect(() => {
     return () => {
       stopPolling();
-      stopWaitingPoll();
-      if (lobbyPollRef.current) clearInterval(lobbyPollRef.current);
+      if (waitingPollRef.current) clearInterval(waitingPollRef.current);
     };
   }, []);
 
   function stopWaitingPoll() {
-    if (waitingPollRef.current) {
-      clearInterval(waitingPollRef.current);
-      waitingPollRef.current = null;
-    }
+    if (waitingPollRef.current) { clearInterval(waitingPollRef.current); waitingPollRef.current = null; }
   }
 
   async function refreshLobby() {
     if (!publicKey) return;
     try {
-      const [rooms, pRooms] = await Promise.all([
-        getOpenRooms(),
-        getPlayerRooms(publicKey),
-      ]);
+      const [rooms, pRooms] = await Promise.all([getOpenRooms(), getPlayerRooms(publicKey)]);
       setOpenRooms(rooms);
-
       const active: { id: number; room: Room }[] = [];
       const completed: number[] = [];
       for (const id of pRooms) {
         try {
           const r = await getRoom(id);
-          if (r.state >= RoomState.Completed) {
-            completed.push(id);
-          } else if (r.state >= RoomState.Ready) {
-            active.push({ id, room: r });
-          }
+          if (r.state >= RoomState.Completed) completed.push(id);
+          else if (r.state >= RoomState.Ready) active.push({ id, room: r });
         } catch {}
       }
       setActiveRooms(active);
@@ -123,13 +114,10 @@ export default function PlayPage() {
         );
         setPhase("result");
       } else if (r.state === RoomState.Guessed1 || r.state === RoomState.Guessed2) {
-        const myKey = publicKey!;
-        const iGuessed = (r.player1 === myKey && r.state === RoomState.Guessed1) ||
-          (r.player2 === myKey && r.state === RoomState.Guessed2);
+        const iGuessed = (r.player1 === publicKey && r.state === RoomState.Guessed1) ||
+          (r.player2 === publicKey && r.state === RoomState.Guessed2);
         setOpponentGuess(null);
-        if (iGuessed) {
-          setPhase("waiting");
-        }
+        if (iGuessed) setPhase("waiting");
       }
     } catch {}
   }
@@ -141,10 +129,7 @@ export default function PlayPage() {
   }
 
   function stopPolling() {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   }
 
   function handleReset() {
@@ -157,25 +142,13 @@ export default function PlayPage() {
     setOpponentGuess(null);
     setCurrentLocation(null);
     setMatchError(null);
-    setSearchRoomId("");
   }
 
   async function handleRejoin(targetId: number) {
     setLoading(true);
-    setMatchError(null);
     try {
       const r = await getRoom(targetId);
-      const inRoom = r.player1 === publicKey || r.player2 === publicKey;
-      if (!inRoom) {
-        setMatchError("Not a participant in this room");
-        setLoading(false);
-        return;
-      }
-      if (r.state >= RoomState.Completed) {
-        setMatchError("Room already finished");
-        setLoading(false);
-        return;
-      }
+      if (r.state >= RoomState.Completed) return;
       setRoomId(targetId);
       setRoom(r);
       const loc = await getLocation(r.location_id).catch(() => null);
@@ -183,10 +156,8 @@ export default function PlayPage() {
       startPolling(targetId);
       setPhase(r.state === RoomState.Ready ? "playing" : "waiting");
     } catch (err: any) {
-      setMatchError(err.message || "Failed to rejoin");
-    } finally {
-      setLoading(false);
-    }
+      setMatchError(err.message);
+    } finally { setLoading(false); }
   }
 
   async function handleAutoMatch() {
@@ -194,22 +165,14 @@ export default function PlayPage() {
     setMatchError(null);
     try {
       const stake = Math.round(parseFloat(stakeAmount || "0") * 1_000_000);
-      if (stake < minStake) {
-        setMatchError(`Minimum stake is ${formatStroops(minStake)} XLM`);
-        setLoading(false);
-        return;
-      }
-
+      if (stake < minStake) { setMatchError("Minimum: " + formatStroops(minStake) + " XLM"); setLoading(false); return; }
       const locationId = await getRandomLocation();
       const location = await getLocation(locationId);
       setCurrentLocation(location);
-
       const resultId = await autoMatch(publicKey!, stake, locationId, signTx);
       setRoomId(resultId);
-
       const r = await getRoom(resultId);
       setRoom(r);
-
       if (r.state === RoomState.Waiting) {
         setPhase("matching");
         waitingPollRef.current = setInterval(async () => {
@@ -230,9 +193,7 @@ export default function PlayPage() {
     } catch (err: any) {
       setMatchError(err.message || "Auto-match failed");
       setPhase("lobby");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   async function handleJoinRoom(targetId: number) {
@@ -240,393 +201,323 @@ export default function PlayPage() {
     setMatchError(null);
     try {
       const r = await getRoom(targetId);
-      if (r.player2 !== null) {
-        setMatchError("Room already has two players");
-        setLoading(false);
-        return;
-      }
-      if (r.player1 === publicKey) {
-        setMatchError("Cannot join your own room");
-        setLoading(false);
-        return;
-      }
-      if (r.stake < minStake) {
-        setMatchError(`Room stake below minimum: ${formatStroops(r.stake)} XLM`);
-        setLoading(false);
-        return;
-      }
-
+      if (r.player2 !== null) { setMatchError("Room full"); setLoading(false); return; }
+      if (r.player1 === publicKey) { setMatchError("Can't join your own room"); setLoading(false); return; }
       await joinRoom(targetId, publicKey!, signTx);
       setRoomId(targetId);
-
-      const location = await getLocation(r.location_id);
-      setCurrentLocation(location);
-      setStakeAmount(formatStroops(r.stake));
-
+      const loc = await getLocation(r.location_id);
+      setCurrentLocation(loc);
       startPolling(targetId);
       setPhase("playing");
     } catch (err: any) {
-      setMatchError(err.message || "Failed to join room");
-    } finally {
-      setLoading(false);
-    }
+      setMatchError(err.message || "Failed to join");
+    } finally { setLoading(false); }
   }
 
   async function handleCancelRoom() {
     stopWaitingPoll();
-    if (roomId) {
-      try { await leaveRoom(roomId, publicKey!, signTx); } catch {}
-    }
+    if (roomId) { try { await leaveRoom(roomId, publicKey!, signTx); } catch {} }
     handleReset();
   }
 
-  function handleMapClick(lat: number, lng: number) {
-    setGuess({ lat, lng });
-  }
-
-  async function handleConfirmGuess() {
+  function handleConfirmGuess() {
     if (!guess || !roomId || !currentLocation || !room) return;
     setLoading(true);
-    try {
-      await submitGuess(roomId, guess.lat, guess.lng, currentLocation.lat, currentLocation.lng, publicKey!, signTx);
-      startPolling(roomId);
-      setPhase("waiting");
-    } catch (err: any) {
-      console.error("Failed to submit guess:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handlePlayAgain() {
-    handleReset();
+    submitGuess(roomId, guess.lat, guess.lng, currentLocation.lat, currentLocation.lng, publicKey!, signTx)
+      .then(() => { startPolling(roomId); setPhase("waiting"); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }
 
   const isPlayer1 = room && publicKey ? room.player1 === publicKey : true;
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6">
         <BackgroundGrid />
-        <Satellite className="w-14 h-14 text-mapa-400/40" />
-        <div className="text-center max-w-sm">
-          <h1 className="text-xl font-bold mb-2">Authentication Required</h1>
-          <p className="text-white/40 text-sm leading-relaxed font-mono">
-            [Connect your Stellar wallet to initialize the terminal and begin matchmaking.]
-          </p>
+        <Satellite className="w-10 h-10 text-mapa-400/40" />
+        <div className="text-center max-w-xs">
+          <h1 className="text-lg font-bold mb-1">Connect Wallet</h1>
+          <p className="text-xs text-white/40 font-mono">Authenticate to access the terminal.</p>
         </div>
-        <button
-          onClick={connect}
-          className="px-8 py-3 rounded-xl bg-mapa-400 text-[#111417] font-semibold text-sm transition-all hover:bg-mapa-300 flex items-center gap-2 shadow-[0_0_24px_rgba(0,242,255,0.25)]"
-        >
-          <Radio className="w-4 h-4" />
-          Connect Wallet
+        <button onClick={connect} className="px-6 py-2.5 rounded-lg bg-mapa-400 text-[#0d0f10] font-semibold text-sm hover:bg-mapa-300 transition-all flex items-center gap-2">
+          <Radio className="w-3.5 h-3.5" />
+          Connect
         </button>
       </div>
     );
   }
 
+  const lobbyContent = (
+    <div className="max-w-2xl mx-auto">
+      <div className="flex gap-1 mb-4 p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.04]">
+        {(["match", "browse", "history"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setLobbyTab(tab)}
+            className={`flex-1 py-1.5 text-[10px] font-mono tracking-wider uppercase rounded-md transition-all ${
+              lobbyTab === tab
+                ? "bg-mapa-400/10 text-mapa-400"
+                : "text-white/25 hover:text-white/50"
+            }`}
+          >
+            {tab === "match" ? "Play" : tab === "browse" ? "Rooms" : "History"}
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence mode="wait">
+        {lobbyTab === "match" && (
+          <motion.div key="match" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="border border-white/[0.06] rounded-lg p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Swords className="w-3.5 h-3.5 text-mapa-400" />
+                <span className="text-xs font-medium">New Match</span>
+              </div>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <div className="data-label mb-1">Stake (XLM) · Min {formatStroops(minStake)}</div>
+                  <input
+                    type="number"
+                    value={stakeAmount}
+                    onChange={(e) => setStakeAmount(e.target.value)}
+                    min={formatStroops(minStake)}
+                    step="1"
+                    className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white font-mono text-sm focus:outline-none focus:border-mapa-400/30 transition-all"
+                  />
+                </div>
+                <button
+                  onClick={handleAutoMatch}
+                  disabled={loading}
+                  className="px-4 py-2 rounded-lg bg-mapa-400 hover:bg-mapa-300 disabled:opacity-40 font-semibold text-[#0d0f10] text-xs transition-all flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  {loading ? <div className="mini-spinner" /> : <Radio className="w-3 h-3" />}
+                  Auto-Match
+                </button>
+              </div>
+              {matchError && <p className="text-red text-[11px] font-mono mt-2">{matchError}</p>}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={searchRoomId}
+                onChange={(e) => setSearchRoomId(e.target.value)}
+                placeholder="Room ID"
+                className="flex-1 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white font-mono text-xs focus:outline-none focus:border-mapa-400/30 transition-all"
+              />
+              <button
+                onClick={() => { const id = parseInt(searchRoomId); if (id > 0) handleJoinRoom(id); }}
+                disabled={loading || !searchRoomId}
+                className="px-3 py-2 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] disabled:opacity-40 text-xs font-mono tracking-wider text-white/50 transition-all flex items-center gap-1.5"
+              >
+                <Search className="w-3 h-3" />
+                Join
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {lobbyTab === "browse" && (
+          <motion.div key="browse" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="text-xs font-medium mb-3 flex items-center gap-2">
+              <Users className="w-3.5 h-3.5 text-mapa-400" />
+              Open Rooms
+              <span className="text-white/25 font-mono text-[10px]">{openRooms.length}</span>
+            </div>
+            {openRooms.length === 0 ? (
+              <p className="text-xs text-white/20 font-mono py-6 text-center">No open rooms.</p>
+            ) : (
+              <div className="space-y-1">
+                {openRooms.map((r) => (
+                  <div key={r.room_id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-white/[0.04] hover:border-white/[0.08] transition-colors">
+                    <div className="flex items-center gap-3 text-xs font-mono">
+                      <span className="text-mapa-400">#{r.room_id}</span>
+                      <span className="text-white/30">{shorten(r.player1)}</span>
+                      <span className="text-gold">{formatStroops(r.stake)}</span>
+                    </div>
+                    <button
+                      onClick={() => handleJoinRoom(r.room_id)}
+                      disabled={loading}
+                      className="px-2.5 py-1 rounded bg-mapa-400/10 hover:bg-mapa-400/20 text-mapa-400 text-[10px] font-mono tracking-wider transition-all disabled:opacity-40"
+                    >
+                      Join
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {lobbyTab === "history" && (
+          <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {activeRooms.length > 0 && (
+              <div className="mb-4">
+                <div className="text-xs font-medium mb-2 flex items-center gap-2">
+                  <Target className="w-3.5 h-3.5 text-mapa-400" />
+                  Active Games
+                </div>
+                <div className="space-y-1">
+                  {activeRooms.map(({ id, room: r }) => (
+                    <div key={id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-mapa-400/10">
+                      <div className="text-[11px] font-mono text-white/40">
+                        <span className="text-mapa-400">#{id}</span>
+                        <span className="ml-2">vs {r.player1 === publicKey ? shorten(r.player2 || "") : shorten(r.player1)}</span>
+                      </div>
+                      <button onClick={() => handleRejoin(id)} className="px-2 py-1 rounded bg-mapa-400/10 hover:bg-mapa-400/20 text-mapa-400 text-[9px] font-mono tracking-wider transition-all flex items-center gap-1">
+                        <RotateCcw className="w-2.5 h-2.5" /> Rejoin
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {completedRooms.length > 0 && (
+              <div>
+                <div className="text-xs font-medium mb-2 flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-white/30" />
+                  History
+                </div>
+                <div className="space-y-1">
+                  {[...completedRooms].reverse().slice(0, 10).map((id) => (
+                    <button
+                      key={id}
+                      onClick={async () => {
+                        try {
+                          const r = await getRoom(id);
+                          setRoom(r); setRoomId(id);
+                          setOpponentGuess(r.player1 === publicKey ? { lat: r.guess2_lat, lng: r.guess2_lng } : { lat: r.guess1_lat, lng: r.guess1_lng });
+                          const loc = await getLocation(r.location_id).catch(() => null);
+                          if (loc) setCurrentLocation(loc);
+                          setPhase("result");
+                        } catch {}
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg border border-white/[0.04] hover:border-white/[0.08] transition-colors text-[11px] font-mono text-white/25"
+                    >
+                      Room #{id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {activeRooms.length === 0 && completedRooms.length === 0 && (
+              <p className="text-xs text-white/20 font-mono py-6 text-center">No games yet.</p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
   return (
     <div className="min-h-screen">
       <BackgroundGrid />
-      <div className="relative z-10 px-4 py-3 md:p-6 max-w-7xl mx-auto">
-        <nav className="flex items-center justify-between mb-5">
+      <div className="relative z-10 px-3 md:px-6 py-3 max-w-7xl mx-auto">
+        <nav className="flex items-center justify-between mb-4 h-9">
           <button
-            onClick={() => (phase === "lobby" ? (window.location.href = "/") : handlePlayAgain())}
-            className="flex items-center gap-1.5 text-white/30 hover:text-white/60 transition-colors text-xs font-mono tracking-wider"
+            onClick={() => (phase === "lobby" ? (window.location.href = "/") : handleReset())}
+            className="flex items-center gap-1 text-white/30 hover:text-white/60 transition-colors text-[11px] font-mono tracking-wider"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            {phase === "lobby" ? "Terminal" : "Disengage"}
+            <ArrowLeft className="w-3 h-3" />
+            {phase === "lobby" ? "Exit" : "Back"}
           </button>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] text-white/15 font-mono tracking-widest hidden sm:inline uppercase">
-              {publicKey?.slice(0, 6)}
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] text-white/15 font-mono tracking-widest hidden sm:inline uppercase">{publicKey?.slice(0, 6)}</span>
             <WalletConnector />
           </div>
         </nav>
 
         <AnimatePresence mode="wait">
           {phase === "lobby" && (
-            <motion.div
-              key="lobby"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-4xl mx-auto"
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-                <div className="lg:col-span-2">
-                  <div className="glass-panel p-5 mb-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Swords className="w-4 h-4 text-mapa-400" />
-                      <h2 className="text-sm font-semibold">Matchmaking</h2>
-                    </div>
-                    <div className="flex items-end gap-3 mb-4">
-                      <div className="flex-1">
-                        <label className="block text-[10px] text-white/20 font-mono tracking-wider uppercase mb-1.5">
-                          Stake (XLM) · Min {formatStroops(minStake)}
-                        </label>
-                        <input
-                          type="number"
-                          value={stakeAmount}
-                          onChange={(e) => setStakeAmount(e.target.value)}
-                          min={formatStroops(minStake)}
-                          step="1"
-                          className="w-full px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white font-sans text-base tracking-tight focus:outline-none focus:border-mapa-400/30 transition-all"
-                        />
-                      </div>
-                      <button
-                        onClick={handleAutoMatch}
-                        disabled={loading}
-                        className="px-5 py-2.5 rounded-lg bg-mapa-400 hover:bg-mapa-300 disabled:opacity-40 font-semibold text-[#111417] transition-all flex items-center gap-2 text-xs shadow-[0_0_16px_rgba(0,242,255,0.15)]"
-                      >
-                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radio className="w-3.5 h-3.5" />}
-                        Auto-Match
-                      </button>
-                    </div>
-                    {matchError && (
-                      <p className="text-red-400/80 text-xs font-mono mb-2">{matchError}</p>
-                    )}
-                  </div>
-
-                  <div className="glass-panel p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-mapa-400" />
-                        <h2 className="text-sm font-semibold">Open Rooms</h2>
-                      </div>
-                      <span className="text-[10px] text-white/20 font-mono">{openRooms.length} waiting</span>
-                    </div>
-                    {openRooms.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-xs text-white/15 font-mono">No open rooms. Create one with Auto-Match.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {openRooms.map((r) => (
-                          <div key={r.room_id} className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
-                            <div className="flex items-center gap-3 text-xs font-mono">
-                              <span className="text-mapa-400">#{r.room_id}</span>
-                              <span className="text-white/30">{r.player1.slice(0, 8)}...</span>
-                              <span className="text-gold">{formatStroops(r.stake)} XLM</span>
-                            </div>
-                            <button
-                              onClick={() => handleJoinRoom(r.room_id)}
-                              disabled={loading}
-                              className="px-3 py-1.5 rounded-md bg-mapa-400/10 hover:bg-mapa-400/20 text-mapa-400 text-[10px] font-mono tracking-wider transition-all disabled:opacity-40"
-                            >
-                              Join
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  <div className="glass-panel p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Search className="w-4 h-4 text-mapa-400" />
-                      <h2 className="text-sm font-semibold">Search Room</h2>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        value={searchRoomId}
-                        onChange={(e) => setSearchRoomId(e.target.value)}
-                        placeholder="Room ID"
-                        className="flex-1 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white font-mono text-xs focus:outline-none focus:border-mapa-400/30 transition-all"
-                      />
-                      <button
-                        onClick={() => {
-                          const id = parseInt(searchRoomId);
-                          if (id > 0) handleJoinRoom(id);
-                        }}
-                        disabled={loading || !searchRoomId}
-                        className="px-3 py-2 rounded-lg bg-mapa-400/10 hover:bg-mapa-400/20 disabled:opacity-40 text-mapa-400 text-[10px] font-mono tracking-wider transition-all"
-                      >
-                        Join
-                      </button>
-                    </div>
-                  </div>
-
-                  {activeRooms.length > 0 && (
-                    <div className="glass-panel p-5 border-mapa-400/10">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Target className="w-4 h-4 text-mapa-400" />
-                        <h2 className="text-sm font-semibold">Active Games</h2>
-                      </div>
-                      <div className="space-y-1.5">
-                        {activeRooms.map(({ id, room: r }) => (
-                          <div key={id} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
-                            <div className="text-[10px] font-mono text-white/30">
-                              <span className="text-mapa-400">#{id}</span>
-                              <span className="ml-2">vs {r.player1 === publicKey ? r.player2?.slice(0, 8) : r.player1.slice(0, 8)}...</span>
-                            </div>
-                            <button
-                              onClick={() => handleRejoin(id)}
-                              className="px-2.5 py-1 rounded bg-mapa-400/10 hover:bg-mapa-400/20 text-mapa-400 text-[9px] font-mono tracking-wider transition-all flex items-center gap-1"
-                            >
-                              <RotateCcw className="w-2.5 h-2.5" />
-                              Rejoin
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {completedRooms.length > 0 && (
-                    <div className="glass-panel p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Clock className="w-4 h-4 text-white/30" />
-                        <h2 className="text-sm font-semibold">History</h2>
-                      </div>
-                      <div className="space-y-1">
-                        {[...completedRooms].reverse().slice(0, 10).map((id) => (
-                          <button
-                            key={id}
-                            onClick={async () => {
-                              try {
-                                const r = await getRoom(id);
-                                setRoom(r);
-                                setRoomId(id);
-                                setOpponentGuess(
-                                  r.player1 === publicKey
-                                    ? { lat: r.guess2_lat, lng: r.guess2_lng }
-                                    : { lat: r.guess1_lat, lng: r.guess1_lng }
-                                );
-                                const loc = await getLocation(r.location_id).catch(() => null);
-                                if (loc) setCurrentLocation(loc);
-                                setPhase("result");
-                              } catch {}
-                            }}
-                            className="w-full text-left px-2 py-1.5 rounded text-[10px] font-mono text-white/20 hover:text-white/40 hover:bg-white/[0.03] transition-all"
-                          >
-                            Room #{id}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <motion.div key="lobby" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {lobbyContent}
             </motion.div>
           )}
 
           {phase === "matching" && (
-            <motion.div
-              key="matching"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center min-h-[70vh] gap-6"
+            <motion.div key="matching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center min-h-[70vh] gap-5"
             >
-              <div className="relative w-24 h-24">
-                <div className="absolute inset-0 rounded-full border border-mapa-400/20 animate-ping" />
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 rounded-full border border-mapa-400/20 animate-ping-subtle" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Radio className="w-6 h-6 text-mapa-400" />
+                  <Radio className="w-5 h-5 text-mapa-400" />
                 </div>
               </div>
               <div className="text-center">
-                <h2 className="text-lg font-bold mb-1">Awaiting Opponent</h2>
-                <p className="text-xs text-white/30 font-mono">
-                  {roomId ? `Room #${roomId} · ${formatStroops(room?.stake || 0)} XLM` : ""}
-                </p>
+                <p className="text-sm font-medium mb-0.5">Awaiting Opponent</p>
+                {roomId && <p className="text-[11px] font-mono text-white/30">Room #{roomId} · {formatStroops(room?.stake || 0)} XLM</p>}
               </div>
-              <button
-                onClick={handleCancelRoom}
-                className="px-5 py-2 rounded-lg border border-white/10 hover:border-white/20 text-xs text-white/40 hover:text-white/60 font-mono tracking-wider transition-all flex items-center gap-1.5"
-              >
-                <LogOut className="w-3 h-3" />
-                Cancel
+              <button onClick={handleCancelRoom} className="px-4 py-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] text-[11px] text-white/40 font-mono transition-all flex items-center gap-1.5">
+                <LogOut className="w-3 h-3" /> Cancel
               </button>
             </motion.div>
           )}
 
           {(phase === "playing" || phase === "waiting") && currentLocation && (
-            <motion.div
-              key="playing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="max-w-6xl mx-auto"
-            >
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  <Target className="w-3.5 h-3.5 text-mapa-400" />
-                  <span className="text-xs font-mono text-white/30 tracking-wide">
-                    {phase === "playing" ? "ACQUIRE TARGET" : "AWAITING OPPONENT..."}
+            <motion.div key="playing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Target className="w-3 h-3 text-mapa-400" />
+                  <span className="text-[10px] font-mono text-white/30 tracking-wide">
+                    {phase === "playing" ? "ACQUIRE TARGET" : "AWAITING OPPONENT"}
                   </span>
                 </div>
                 {room && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-mono text-white/15">#{roomId}</span>
-                    <div className="flex items-center gap-1.5">
-                      <Coins className="w-3 h-3 text-white/20" />
-                      <span className="text-xs font-mono text-white/20">{formatStroops(room.stake)} XLM</span>
-                    </div>
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-white/20">
+                    <span>#{roomId}</span>
+                    <span>{formatStroops(room.stake)} XLM</span>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="glass-panel p-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="border border-white/[0.04] rounded-lg overflow-hidden">
                   <StreetView lat={currentLocation.lat} lng={currentLocation.lng} />
                 </div>
 
-                <div className="flex flex-col gap-4">
-                  <div className="glass-panel p-1.5">
+                <div className="flex flex-col gap-3">
+                  <div className="border border-white/[0.04] rounded-lg overflow-hidden">
                     <MapView
-                      onClick={phase === "playing" ? handleMapClick : undefined}
+                      onClick={phase === "playing" ? (lat, lng) => setGuess({ lat, lng }) : undefined}
                       guess={guess}
                       interactive={phase === "playing"}
                     />
                   </div>
 
-                  {phase === "waiting" && (
-                    <div className="glass-panel p-4 text-center">
-                      <p className="text-xs text-white/30 font-mono">Waiting for opponent to transmit coordinates...</p>
-                    </div>
-                  )}
-
                   {guess && phase === "playing" && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="glass-panel p-4 border-mapa-400/15"
-                    >
-                      <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/[0.04]">
-                        <p className="text-[10px] text-white/20 font-mono tracking-wider uppercase">Target Locked</p>
-                        <p className="text-xs font-mono text-mapa-400 tabular-nums">{guess.lat.toFixed(4)}N {guess.lng.toFixed(4)}E</p>
+                    <div className="border border-mapa-400/15 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[9px] font-mono tracking-wider text-white/30 uppercase">Target</span>
+                        <span className="coord-badge">
+                          {guess.lat.toFixed(4)}N {guess.lng.toFixed(4)}E
+                        </span>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mb-3">
-                        <div className="bg-white/[0.03] rounded-lg p-2.5">
-                          <p className="text-[9px] text-white/20 font-mono tracking-wider uppercase mb-0.5">Latitude</p>
-                          <p className="text-xs font-mono text-white/60">{guess.lat.toFixed(4)}</p>
+                        <div className="data-row">
+                          <span className="data-label">Latitude</span>
+                          <span className="data-value">{guess.lat.toFixed(4)}</span>
                         </div>
-                        <div className="bg-white/[0.03] rounded-lg p-2.5">
-                          <p className="text-[9px] text-white/20 font-mono tracking-wider uppercase mb-0.5">Longitude</p>
-                          <p className="text-xs font-mono text-white/60">{guess.lng.toFixed(4)}</p>
+                        <div className="data-row">
+                          <span className="data-label">Longitude</span>
+                          <span className="data-value">{guess.lng.toFixed(4)}</span>
                         </div>
                       </div>
                       <button
                         onClick={handleConfirmGuess}
                         disabled={loading}
-                        className="w-full py-3 rounded-xl bg-mapa-400 hover:bg-mapa-300 disabled:opacity-40 font-semibold text-[#111417] transition-all flex items-center justify-center gap-2 text-sm"
+                        className="w-full py-2.5 rounded-lg bg-mapa-400 hover:bg-mapa-300 disabled:opacity-40 font-semibold text-[#0d0f10] text-xs transition-all flex items-center justify-center gap-2"
                       >
-                        {loading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Crosshair className="w-4 h-4" />
-                            Confirm Strike
-                          </>
-                        )}
+                        {loading ? <div className="mini-spinner" /> : <><Crosshair className="w-3 h-3" /> Confirm Strike</>}
                       </button>
-                    </motion.div>
+                    </div>
+                  )}
+
+                  {phase === "waiting" && (
+                    <div className="border border-white/[0.04] rounded-lg p-4 text-center">
+                      <p className="text-[11px] text-white/30 font-mono">Waiting for opponent guess...</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -634,77 +525,52 @@ export default function PlayPage() {
           )}
 
           {phase === "result" && currentLocation && room && (
-            <motion.div
-              key="result"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="max-w-5xl mx-auto"
+            <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="max-w-lg mx-auto"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-                <div className="glass-panel p-1.5">
-                  <StreetView lat={currentLocation.lat} lng={currentLocation.lng} />
-                </div>
-                <div className="glass-panel p-1.5">
-                  <MapView
-                    lat={currentLocation.lat}
-                    lng={currentLocation.lng}
-                    guess={
-                      isPlayer1
-                        ? { lat: room.guess1_lat, lng: room.guess1_lng }
-                        : { lat: room.guess2_lat, lng: room.guess2_lng }
-                    }
-                    actual={{ lat: currentLocation.lat, lng: currentLocation.lng }}
-                    interactive={false}
-                  />
-                </div>
+              <div className="border border-white/[0.04] rounded-lg overflow-hidden mb-4">
+                <StreetView lat={currentLocation.lat} lng={currentLocation.lng} />
+              </div>
+              <div className="border border-white/[0.04] rounded-lg overflow-hidden mb-4">
+                <MapView
+                  lat={currentLocation.lat} lng={currentLocation.lng}
+                  guess={isPlayer1 ? { lat: room.guess1_lat, lng: room.guess1_lng } : { lat: room.guess2_lat, lng: room.guess2_lng }}
+                  actual={{ lat: currentLocation.lat, lng: currentLocation.lng }}
+                  interactive={false}
+                />
               </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="glass-panel p-6 md:p-8 w-full max-w-lg mx-auto text-center"
-              >
-                <Trophy className={`w-12 h-12 mx-auto mb-3 ${room.winner === publicKey ? "text-gold drop-shadow-[0_0_12px_rgba(254,214,57,0.4)]" : "text-white/10"}`} />
-                <h2 className={`text-2xl font-bold mb-1 ${room.winner === publicKey ? "text-gold" : "text-white/40"}`}>
+              <div className="border border-white/[0.06] rounded-lg p-5 text-center">
+                <Trophy className={`w-8 h-8 mx-auto mb-2 ${room.winner === publicKey ? "text-gold" : "text-white/10"}`} />
+                <h2 className={`text-lg font-bold mb-0.5 ${room.winner === publicKey ? "text-gold" : "text-white/40"}`}>
                   {room.winner === publicKey ? "VICTORY" : room.winner ? "DEFEAT" : "STANDOFF"}
                 </h2>
-                <p className="text-xs text-white/20 font-mono mb-5">
-                  {room.winner === publicKey ? "Prize transmitted to your wallet" : room.winner ? "Better luck next sortie" : "Neither player found the mark"}
+                <p className="text-[10px] text-white/25 font-mono mb-4">
+                  {room.winner === publicKey ? "Prize sent to your wallet" : room.winner ? "Better luck next time" : "Neither found the mark"}
                 </p>
 
-                <div className="grid grid-cols-2 gap-3 mb-5">
-                  <div className="glass-panel p-3">
-                    <p className="text-[10px] text-white/20 font-mono tracking-wider uppercase mb-1">
-                      {isPlayer1 ? "You" : "Opponent"}
-                    </p>
-                    <p className="text-xl font-bold">{formatDistance(isPlayer1 ? room.distance1 : room.distance2)}</p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="border border-white/[0.04] rounded-lg p-3">
+                    <div className="data-label mb-1">{isPlayer1 ? "You" : "Opponent"}</div>
+                    <div className="text-base font-bold font-mono">{formatDistance(isPlayer1 ? room.distance1 : room.distance2)}</div>
                   </div>
-                  <div className="glass-panel p-3">
-                    <p className="text-[10px] text-white/20 font-mono tracking-wider uppercase mb-1">
-                      {isPlayer1 ? "Opponent" : "You"}
-                    </p>
-                    <p className="text-xl font-bold">{formatDistance(isPlayer1 ? room.distance2 : room.distance1)}</p>
+                  <div className="border border-white/[0.04] rounded-lg p-3">
+                    <div className="data-label mb-1">{isPlayer1 ? "Opponent" : "You"}</div>
+                    <div className="text-base font-bold font-mono">{formatDistance(isPlayer1 ? room.distance2 : room.distance1)}</div>
                   </div>
                 </div>
 
                 {opponentGuess && (
-                  <div className="glass-panel p-3 mb-5">
-                    <p className="text-[10px] text-white/20 font-mono tracking-wider uppercase mb-1">Enemy Coordinates</p>
-                    <p className="text-sm font-mono text-white/50">
-                      {opponentGuess.lat.toFixed(4)}N, {opponentGuess.lng.toFixed(4)}E
-                    </p>
+                  <div className="border border-white/[0.04] rounded-lg p-3 mb-4">
+                    <div className="data-label mb-1">Enemy Coordinates</div>
+                    <p className="text-xs font-mono text-white/40">{opponentGuess.lat.toFixed(4)}N, {opponentGuess.lng.toFixed(4)}E</p>
                   </div>
                 )}
 
-                <button
-                  onClick={handlePlayAgain}
-                  className="w-full py-3.5 rounded-xl bg-mapa-400 hover:bg-mapa-300 font-semibold text-[#111417] transition-all text-sm shadow-[0_0_24px_rgba(0,242,255,0.2)] hover:shadow-[0_0_32px_rgba(0,242,255,0.35)]"
-                >
-                  Deploy Again
+                <button onClick={handleReset} className="w-full py-2.5 rounded-lg bg-mapa-400 hover:bg-mapa-300 font-semibold text-[#0d0f10] text-sm transition-all">
+                  Play Again
                 </button>
-              </motion.div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -7,198 +7,137 @@
   --color-mapa-300: #33edff;
   --color-mapa-400: #00f2ff;
   --color-mapa-500: #00dbe7;
-  --color-mapa-600: #00c4d0;
-  --color-mapa-700: #009da6;
-  --color-mapa-800: #00767c;
-  --color-mapa-900: #004f52;
-  --color-mapa-950: #00272a;
 
   --color-stellar: #b600f8;
-  --color-stellar-light: #d488ff;
   --color-gold: #fed639;
-  --color-gold-dim: #c9a61e;
-  --color-distance-near: #22c55e;
-  --color-distance-far: #ef4444;
+  --color-green: #22c55e;
+  --color-red: #ef4444;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 body {
-  background: #111417;
+  background: #0d0f10;
   color: #e1e2e7;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: rgba(0, 242, 255, 0.25);
-  color: #fff;
+  background: rgba(0, 242, 255, 0.2);
 }
+
+/* ========== Shared containers ========== */
 
 .map-container {
   width: 100%;
   height: 100%;
-  min-height: 300px;
-  border-radius: 12px;
+  min-height: 260px;
+  border-radius: 8px;
   overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .map-container {
-    min-height: 400px;
-  }
 }
 
 .street-view-container {
   width: 100%;
-  height: 320px;
-  border-radius: 12px;
+  height: 260px;
+  border-radius: 8px;
   overflow: hidden;
   position: relative;
 }
 
 @media (min-width: 768px) {
-  .street-view-container {
-    height: 450px;
-  }
+  .map-container { min-height: 360px; }
+  .street-view-container { height: 360px; }
 }
 
+/* ========== Panels ========== */
+
 .glass-panel {
-  background: rgba(20, 20, 25, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: rgba(20, 24, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
 }
 
 .glass-panel-strong {
-  background: rgba(20, 20, 25, 0.75);
-  backdrop-filter: blur(24px);
+  background: rgba(20, 24, 26, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border-radius: 10px;
 }
 
-.glass-panel-hover:hover {
-  border-color: rgba(0, 242, 255, 0.25);
-  box-shadow: 0 0 30px rgba(0, 242, 255, 0.08);
-}
+/* ========== Data readout ========== */
 
-.gradient-border {
-  position: relative;
-}
-
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #00f2ff, #b600f8, #fed639);
-  z-index: -1;
-  opacity: 0.4;
-  transition: opacity 0.3s ease;
-}
-
-.gradient-border:hover::before {
-  opacity: 0.7;
-}
-
-.cyan-border {
-  position: relative;
-}
-
-.cyan-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #00f2ff, rgba(0, 242, 255, 0.2));
-  z-index: -1;
-  opacity: 0.3;
-}
-
-.glow-border {
-  position: relative;
-}
-
-.glow-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #00f2ff, #b600f8, #fed639);
-  z-index: -1;
-  opacity: 0.5;
-}
-
-.score-ring {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
+.data-row {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.text-data {
+.data-label {
   font-family: var(--font-mono);
-  letter-spacing: 0.02em;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(116, 130, 136, 0.7);
 }
 
-.bg-mapa-glow {
-  box-shadow: 0 0 24px rgba(0, 242, 255, 0.25), 0 0 60px rgba(0, 242, 255, 0.1);
+.data-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: #e1e2e7;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(0, 242, 255, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(0, 242, 255, 0.6); }
+/* ========== Coordinate badge ========== */
+
+.coord-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 242, 255, 0.06);
+  border: 1px solid rgba(0, 242, 255, 0.12);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #00f2ff;
 }
 
-@keyframes neon-pulse {
-  0%, 100% { filter: brightness(1) drop-shadow(0 0 8px rgba(0, 242, 255, 0.2)); }
-  50% { filter: brightness(1.2) drop-shadow(0 0 16px rgba(0, 242, 255, 0.5)); }
+/* ========== Spinner ========== */
+
+.mini-spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(0, 242, 255, 0.15);
+  border-top-color: #00f2ff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
 }
 
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  41% { opacity: 1; }
-  42% { opacity: 0.8; }
-  43% { opacity: 1; }
-  45% { opacity: 0.6; }
-  46% { opacity: 1; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
+/* ========== Ping ring (single, subtle) ========== */
+
+@keyframes ping-subtle {
+  0% { transform: scale(1); opacity: 0.4; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+.animate-ping-subtle {
+  animation: ping-subtle 2s ease-out infinite;
 }
 
-.animate-neon-pulse {
-  animation: neon-pulse 2s ease-in-out infinite;
-}
+/* ========== Scrollbar ========== */
 
-.animate-flicker {
-  animation: flicker 4s infinite;
+::-webkit-scrollbar {
+  width: 4px;
 }
-
-.scanline-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(0, 242, 255, 0.015) 50%,
-    transparent 100%
-  );
-  background-size: 100% 4px;
-  pointer-events: none;
-  animation: scanline 8s linear infinite;
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
 }
