@@ -1,5 +1,8 @@
 # Mapa — GeoGuessr on Stellar
 
+[![Contracts](https://github.com/rylsherdamzs/Mapa/actions/workflows/contracts.yml/badge.svg)](https://github.com/rylsherdamzs/Mapa/actions/workflows/contracts.yml)
+[![Frontend](https://github.com/rylsherdamzs/Mapa/actions/workflows/frontend.yml/badge.svg)](https://github.com/rylsherdamzs/Mapa/actions/workflows/frontend.yml)
+
 Mapa is a decentralized geography guessing game built on **Stellar Soroban**. Players guess locations from street view imagery and win prizes in **XLM** — the closer the guess, the bigger the payout.
 
 ## How It Works
@@ -27,6 +30,23 @@ Mapa is a decentralized geography guessing game built on **Stellar Soroban**. Pl
 ```
 
 ## Smart Contracts
+
+### Contract Addresses (Testnet)
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| **MapaGame** | `CANFO7ESVUGOSWGVLSQ6ZJ5H6NYQ5YX3JV7HEOK2K3RFGA75WSUW3MVO` | [View](https://stellar.expert/explorer/testnet/contract/CANFO7ESVUGOSWGVLSQ6ZJ5H6NYQ5YX3JV7HEOK2K3RFGA75WSUW3MVO) |
+| **MapaLocationVault** | `CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB` | [View](https://stellar.expert/explorer/testnet/contract/CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB) |
+| **Token** (XLM native) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` | [View](https://stellar.expert/explorer/testnet/asset/XLM) |
+| **Admin** | `GBHBOPW5AMW5J6RRR4YU2NLJI3HRX7SG4Q4ZZBJILLDR3644INLHMMZZ` | [View](https://stellar.expert/explorer/testnet/account/GBHBOPW5AMW5J6RRR4YU2NLJI3HRX7SG4Q4ZZBJILLDR3644INLHMMZZ) |
+
+### Deployment Screenshots
+
+![Game Contract Deployment](images/game_contract.png)
+*MapaGame contract deployed on Stellar testnet*
+
+![Location Vault Contract Deployment](images/location_contract.png)
+*MapaLocationVault contract deployed on Stellar testnet*
 
 ### MapaGame (`contracts/mapa_game/`)
 - Game lifecycle management
@@ -84,6 +104,19 @@ make deploy
 # Deploy to mainnet (requires confirmation)
 make deploy-mainnet
 ```
+
+### CI/CD Pipeline
+
+The project uses GitHub Actions for automated CI/CD (`.github/workflows/`):
+
+| Workflow | Triggers | Jobs |
+|----------|----------|------|
+| `contracts.yml` | Push/PR to `main`, tags, manual | Build → Test → Integration → Deploy |
+| `frontend.yml` | Push/PR to `main` | Build + Lint |
+| `deploy.yml` | Tags, manual | Deploy to Vercel |
+| `soroban.yml` | Manual | Contract interaction tasks |
+
+The **Contracts** workflow builds both WASM targets, runs unit tests and Node integration tests, and can deploy contracts via `workflow_dispatch` with a configurable target network (`testnet`/`mainnet`). Deployment uses the Stellar CLI binary with `--source-account` (secrets), pinned to Rust `1.84.0` with `wasm32v1-none` target.
 
 ## Prize Mechanics
 

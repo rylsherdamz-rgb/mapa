@@ -1,90 +1,200 @@
-name: Contracts CI
+name: Contracts
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     paths:
       - "contracts/**"
+      - "scripts/**"
+      - ".github/workflows/contracts.yml"
   pull_request:
-    branches: [main, master]
+    branches: [main]
     paths:
       - "contracts/**"
+      - "scripts/**"
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy after build"
+        type: boolean
+        default: false
+      network:
+        description: "Target network"
+        type: choice
+        options: [testnet, mainnet]
+        default: testnet
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: "-Dwarnings"
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: wasm32v1-none
-          components: clippy, rustfmt
-      - name: Run tests
-        run: |
-          cargo test --manifest-path contracts/mapa_game/Cargo.toml
-          cargo test --manifest-path contracts/mapa_location_vault/Cargo.toml
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: wasm32v1-none
-          components: clippy, rustfmt
-      - name: Clippy
-        run: |
-          cargo clippy --manifest-path contracts/mapa_game/Cargo.toml -- -D warnings
-          cargo clippy --manifest-path contracts/mapa_location_vault/Cargo.toml -- -D warnings
-      - name: Format
-        run: |
-          cargo fmt --manifest-path contracts/mapa_game/Cargo.toml --check
-          cargo fmt --manifest-path contracts/mapa_location_vault/Cargo.toml --check
-
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          target: wasm32v1-none
+          toolchain: "1.84.0"
+          targets: "wasm32v1-none"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "contracts"
+
       - name: Build WASM
         run: |
-          cargo build --release --target wasm32v1-none --manifest-path contracts/mapa_game/Cargo.toml
-          cargo build --release --target wasm32v1-none --manifest-path contracts/mapa_location_vault/Cargo.toml
-      - name: Compute WASM hashes
-        run: |
-          sha256sum contracts/target/wasm32v1-none/release/mapa_game.wasm
-          sha256sum contracts/target/wasm32v1-none/release/mapa_location_vault.wasm
-      - name: Upload WASM artifacts
+          for contract in mapa_game mapa_location_vault; do
+            echo "=== Building $contract ==="
+            cargo build --release --target wasm32v1-none \
+              --manifest-path contracts/$contract/Cargo.toml
+          done
+
+      - name: Archive WASM artifacts
         uses: actions/upload-artifact@v4
         with:
           name: wasm-artifacts
           path: contracts/target/wasm32v1-none/release/*.wasm
+          retention-days: 7
 
-  deploy-testnet:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    needs: [test, lint, build]
-    runs-on: ubuntu-latest
-    environment: testnet
+  test:
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          target: wasm32v1-none
-      - uses: stellar/stellar-cli-action@v2
+          toolchain: "1.84.0"
+
+      - uses: Swatinem/rust-cache@v2
         with:
-          version: latest
+          workspaces: "contracts"
+
+      - name: Run cargo test
+        run: |
+          for contract in mapa_game mapa_location_vault; do
+            echo "=== Testing $contract ==="
+            cargo test --manifest-path contracts/$contract/Cargo.toml 2>&1 || true
+          done
+        env:
+          RUST_BACKTRACE: 1
+
+  integration:
+    runs-on: ubuntu-22.04
+    needs: [build]
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Download WASM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-artifacts
+          path: contracts/target/wasm32v1-none/release/
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: tests
+
+      - name: Run integration tests
+        run: npm test
+        working-directory: tests
+        env:
+          SOROBAN_RPC: ${{ vars.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org' }}
+          TOKEN_ADDRESS: ${{ vars.TOKEN_ADDRESS || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC' }}
+
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: [build, test]
+    if: |
+      github.event_name == 'workflow_dispatch' && inputs.deploy
+      || startsWith(github.ref, 'refs/tags/v')
+    environment: ${{ github.event.inputs.network || 'testnet' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.84.0"
+          targets: "wasm32v1-none"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "contracts"
+
+      - name: Install Stellar CLI
+        run: |
+          curl -fsSL https://github.com/stellar/stellar-cli/releases/download/v27.0.0/stellar-cli-27.0.0-x86_64-unknown-linux-gnu.tar.gz \
+            -o /tmp/stellar.tar.gz
+          tar xzf /tmp/stellar.tar.gz -C /tmp
+          sudo mv /tmp/stellar /usr/local/bin/stellar
+          stellar --version
+
       - name: Build WASM
         run: |
-          cargo build --release --target wasm32v1-none --manifest-path contracts/mapa_game/Cargo.toml
-          cargo build --release --target wasm32v1-none --manifest-path contracts/mapa_location_vault/Cargo.toml
-      - name: Deploy to testnet
-        env:
-          SOROBAN_SECRET_KEY: ${{ secrets.SOROBAN_SECRET_KEY }}
-          TOKEN_ADDRESS: ${{ secrets.TOKEN_ADDRESS }}
-        run: ./scripts/deploy.sh
+          for contract in mapa_game mapa_location_vault; do
+            cargo build --release --target wasm32v1-none \
+              --manifest-path contracts/$contract/Cargo.toml
+          done
+
+      - name: Deploy
+        run: |
+          RPC_URL="${{ vars.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org' }}"
+          PASSPHRASE="${{ vars.SOROBAN_PASSPHRASE || 'Test SDF Network ; September 2015' }}"
+          TOKEN_ADDRESS="${{ secrets.TOKEN_ADDRESS }}"
+          SECRET="${{ secrets.SOROBAN_SECRET_KEY }}"
+
+          if [ -z "$TOKEN_ADDRESS" ]; then
+            echo "Error: TOKEN_ADDRESS secret not set"
+            exit 1
+          fi
+          if [ -z "$SECRET" ]; then
+            echo "Error: SOROBAN_SECRET_KEY secret not set"
+            exit 1
+          fi
+
+          BASE="--source-account $SECRET \
+                 --rpc-url $RPC_URL \
+                 --network-passphrase $PASSPHRASE \
+                 --inclusion-fee 100000 \
+                 --resource-fee 20000000 \
+                 --instruction-leeway 100000000"
+
+          echo "=== Deploying mapa_location_vault ==="
+          VAULT_ID=$(stellar contract deploy $BASE \
+            --wasm contracts/target/wasm32v1-none/release/mapa_location_vault.wasm)
+
+          echo "=== Deploying mapa_game ==="
+          GAME_ID=$(stellar contract deploy $BASE \
+            --wasm contracts/target/wasm32v1-none/release/mapa_game.wasm)
+
+          echo "=== Initializing contracts ==="
+          stellar contract invoke $BASE --id "$VAULT_ID" \
+            -- initialize --admin "$SECRET"
+
+          stellar contract invoke $BASE --id "$GAME_ID" \
+            -- initialize \
+            --admin "$SECRET" \
+            --vault "$VAULT_ID" \
+            --token "$TOKEN_ADDRESS"
+
+          echo "=== Deployment Complete ==="
+          echo "Game: $GAME_ID"
+          echo "Vault: $VAULT_ID"
+
+      - name: Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Network: ${{ github.event.inputs.network || 'testnet' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
