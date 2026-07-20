@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Target, ArrowLeft, Coins, Trophy, Crosshair, Swords, Radio, Satellite, Search, Users, Clock, RotateCcw, LogOut, MapPin } from "lucide-react";
+import { toast } from "sonner";
 import { WalletConnector } from "@/components/wallet/WalletConnector";
 import { StreetView } from "@/components/game/StreetView";
 import { MapView } from "@/components/game/MapView";
@@ -107,6 +108,11 @@ export default function PlayPage() {
       setRoom(r);
       if (r.state >= RoomState.Completed) {
         stopPolling();
+        const won = r.winner === publicKey;
+        toast(won ? "Victory!" : "Defeat", {
+          description: won ? "Prize sent to your wallet" : "Better luck next time",
+          icon: won ? "🏆" : "💀",
+        });
         setOpponentGuess(
           r.player1 === publicKey
             ? { lat: r.guess2_lat, lng: r.guess2_lng }
@@ -157,6 +163,7 @@ export default function PlayPage() {
       setPhase(r.state === RoomState.Ready ? "playing" : "waiting");
     } catch (err: unknown) {
       setMatchError(err instanceof Error ? err.message : String(err));
+      toast.error("Failed to rejoin", { description: err instanceof Error ? err.message : String(err) });
     } finally { setLoading(false); }
   }
 
@@ -170,6 +177,7 @@ export default function PlayPage() {
       const location = await getLocation(locationId);
       setCurrentLocation(location);
       const resultId = await autoMatch(publicKey!, stake, locationId, signTx);
+      toast.success("Room created", { description: "Room #" + resultId + " · " + formatStroops(stake) + " XLM" });
       setRoomId(resultId);
       const r = await getRoom(resultId);
       setRoom(r);
@@ -182,6 +190,7 @@ export default function PlayPage() {
             if (updated.state === RoomState.Ready) {
               stopWaitingPoll();
               startPolling(resultId);
+              toast.success("Opponent joined");
               setPhase("playing");
             }
           } catch {}
@@ -192,6 +201,7 @@ export default function PlayPage() {
       }
     } catch (err: unknown) {
       setMatchError(err instanceof Error ? err.message : "Auto-match failed");
+      toast.error("Auto-match failed", { description: err instanceof Error ? err.message : "Unknown error" });
       setPhase("lobby");
     } finally { setLoading(false); }
   }
@@ -204,6 +214,7 @@ export default function PlayPage() {
       if (r.player2 !== null) { setMatchError("Room full"); setLoading(false); return; }
       if (r.player1 === publicKey) { setMatchError("Can't join your own room"); setLoading(false); return; }
       await joinRoom(targetId, publicKey!, signTx);
+      toast.success("Joined room", { description: "Room #" + targetId });
       setRoomId(targetId);
       const loc = await getLocation(r.location_id);
       setCurrentLocation(loc);
@@ -211,12 +222,13 @@ export default function PlayPage() {
       setPhase("playing");
     } catch (err: unknown) {
       setMatchError(err instanceof Error ? err.message : "Failed to join");
+      toast.error("Failed to join", { description: err instanceof Error ? err.message : "Unknown error" });
     } finally { setLoading(false); }
   }
 
   async function handleCancelRoom() {
     stopWaitingPoll();
-    if (roomId) { try { await leaveRoom(roomId, publicKey!, signTx); } catch {} }
+    if (roomId) { try { await leaveRoom(roomId, publicKey!, signTx); toast.info("Room cancelled", { description: "Room #" + roomId }); } catch {} }
     handleReset();
   }
 
@@ -224,7 +236,7 @@ export default function PlayPage() {
     if (!guess || !roomId || !currentLocation || !room) return;
     setLoading(true);
     submitGuess(roomId, guess.lat, guess.lng, currentLocation.lat, currentLocation.lng, publicKey!, signTx)
-      .then(() => { startPolling(roomId); setPhase("waiting"); })
+      .then(() => { toast.success("Target acquired"); startPolling(roomId); setPhase("waiting"); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }

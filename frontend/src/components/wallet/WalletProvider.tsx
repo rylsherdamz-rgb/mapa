@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useCallback, useState, useEffect, ReactNode } from "react";
+import { toast } from "sonner";
 import {
   StellarWalletsKit,
   Networks,
@@ -71,7 +72,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (event.payload.address) {
         setPublicKey(event.payload.address);
       } else {
-        setPublicKey(null);
+    setPublicKey(null);
+    toast.info("Wallet disconnected");
       }
     });
 
@@ -92,6 +94,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       ensureKit();
       const { address } = await StellarWalletsKit.authModal();
       setPublicKey(address);
+      toast.success("Wallet connected", { description: address.slice(0, 8) + "..." });
     } catch (err) {
       console.error("Failed to connect wallet:", err);
       throw err;
