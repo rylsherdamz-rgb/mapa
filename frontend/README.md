@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mapa — GeoGuessr on Stellar Soroban
+
+A multiplayer geography game built on the Stellar Soroban blockchain. Stake XLM, drop a pin on the map, and the closest guess wins the pot.
+
+**Live demo:** [mapa.vercel.app](https://mapa.vercel.app)
+
+## How It Works
+
+1. Connect your Stellar wallet (Freighter, Albedo, or Wallet Kit)
+2. Stake XLM to enter a match or browse open rooms
+3. Receive a random satellite street-view location
+4. Drop your pin on the map — closest guess wins
+
+## Tech Stack
+
+- **Smart Contracts:** Soroban (Rust) — `mapa_game` and `mapa_location_vault`
+- **Frontend:** Next.js 16, React 19, TypeScript
+- **Styling:** Tailwind CSS v4, custom OKLCH design system
+- **Maps:** Google Maps JavaScript API (Street View + Satellite)
+- **Wallet:** Stellar Wallet Kit + Soroban RPC
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- Stellar wallet (Freighter recommended)
+- Soroban testnet XLM (use [Friendbot](https://laboratory.stellar.org/#account-creator?network=test))
+
+### Setup
 
 ```bash
+cd frontend
+npm install
+cp .env.example .env.local
+# Fill in your NEXT_PUBLIC_SOROBAN_RPC and contract addresses
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Smart Contract Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Deployments are managed from the project root:
 
-## Learn More
+```bash
+cd /home/richie/Projects/Mapa
+./scripts/deploy.sh
+```
 
-To learn more about Next.js, take a look at the following resources:
+Contract addresses are recorded in `deployment.json`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+frontend/
+├── src/
+│   ├── app/          # Next.js pages and routes
+│   ├── components/   # React components
+│   ├── lib/          # Game logic, Soroban RPC helpers
+│   └── styles/       # Global styles
+├── public/           # Static assets (images, videos, icons)
+├── vitest.config.ts  # Test configuration
+└── next.config.ts    # Next.js configuration
+```
 
-## Deploy on Vercel
+## Images & Media
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Responsive images for mobile and desktop are included in `public/`:
+- `landing.png` / `mobile-landing.png` — Landing page screenshots
+- `play.png` / `mobile-play.png` — Gameplay screenshots
+- `promo-still.png` / `mapa-promo.mp4` — Promotional video still and full video
+- `room.png`, `street-view.png`, `victory.png`, `defeat.png` — Game state screenshots
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See the [Promo Page](/promo) for the full video and scene breakdown.
+
+## Deployment
+
+The frontend is deployed on Vercel. See the [deployment guide](../README.md) for details.
+
+## License
+
+MIT
