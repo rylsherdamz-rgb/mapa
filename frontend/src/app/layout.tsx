@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = "width=device-width, initial-scale=1";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,6 +32,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#0d0f10" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
         <Providers>{children}</Providers>
         <Analytics />
