@@ -4,6 +4,27 @@
 
 Mapa is a decentralized geography guessing game built on **Stellar Soroban**. Players guess locations from street view imagery and win prizes in **XLM** — the closer the guess, the bigger the payout.
 
+## Preview
+
+### Promo Video
+
+[mapa-promo.mp4](frontend/public/mapa-promo.mp4) — [Raw on GitHub](https://raw.githubusercontent.com/rylsherdamz-rgb/mapa/main/frontend/public/mapa-promo.mp4)
+
+### Screenshots
+
+| Mobile | Desktop |
+|--------|---------|
+| ![Landing Mobile](images/mobile-landing.png) | ![Landing Desktop](images/landing.png) |
+| ![Play Mobile](images/mobile-play.png) | ![Play Desktop](images/play.png) |
+
+### Game States
+
+![Victory](images/victory.png)
+![Defeat](images/defeat.png)
+![Room](images/room.png)
+![Street View](images/street-view.png)
+![Full Screen](images/full-screen.png)
+
 ## How It Works
 
 1. **Connect Wallet** — Link your Stellar wallet (Freighter, xBull, Lobstr, Hana)
