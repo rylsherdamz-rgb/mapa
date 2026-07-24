@@ -67,9 +67,9 @@ describe("formatDistance", () => {
 
 describe("formatStroops", () => {
   it("converts stroops to XLM", () => {
-    expect(formatStroops(10_000_000)).toBe("1.00");
-    expect(formatStroops(55_000_000)).toBe("5.50");
+    expect(formatStroops(1_000_000)).toBe("1.00");
+    expect(formatStroops(5_500_000)).toBe("5.50");
     expect(formatStroops(0)).toBe("0.00");
-    expect(formatStroops(1_234_560)).toBe("0.12");
+    expect(formatStroops(123_456)).toBe("0.12");
   });
 });

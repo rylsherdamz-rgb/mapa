@@ -38,7 +38,7 @@ describe("ResultScreen", () => {
 
   it("shows prize", () => {
     render(<ResultScreen {...defaultProps} />);
-    expect(screen.getByText("2.5000 XLM")).toBeInTheDocument();
+    expect(screen.getByText("25.0000 XLM")).toBeInTheDocument();
   });
 
   it("shows location name", () => {

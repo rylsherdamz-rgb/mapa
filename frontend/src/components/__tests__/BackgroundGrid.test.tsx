@@ -3,20 +3,17 @@ import { render } from "@testing-library/react";
 import { BackgroundGrid } from "../BackgroundGrid";
 
 describe("BackgroundGrid", () => {
-  it("renders with aria-hidden", () => {
+  it("renders with grid background", () => {
     const { container } = render(<BackgroundGrid />);
     const root = container.firstElementChild;
-    expect(root).toHaveAttribute("aria-hidden", "true");
-    expect(root).toHaveClass("terrain-field");
+    expect(root).toHaveClass("fixed");
+    expect(root).toHaveClass("-z-10");
   });
 
-  it("renders all terrain layers", () => {
+  it("renders all background layers", () => {
     const { container } = render(<BackgroundGrid />);
-    expect(container.querySelector(".terrain-field__base")).toBeInTheDocument();
-    expect(container.querySelector(".terrain-field__grid")).toBeInTheDocument();
-    expect(container.querySelector(".terrain-field__contours")).toBeInTheDocument();
-    expect(container.querySelector(".terrain-field__halo--cyan")).toBeInTheDocument();
-    expect(container.querySelector(".terrain-field__halo--violet")).toBeInTheDocument();
-    expect(container.querySelector(".terrain-field__noise")).toBeInTheDocument();
+    expect(container.querySelector(".absolute.inset-0.bg-\\[\\#111417\\]")).toBeInTheDocument();
+    expect(container.querySelector(".opacity-\\[0\\.04\\]")).toBeInTheDocument();
+    expect(container.querySelector(".opacity-\\[0\\.03\\]")).toBeInTheDocument();
   });
 });
