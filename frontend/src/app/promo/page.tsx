@@ -23,17 +23,13 @@ export default function PromoPage() {
         </div>
 
         <div className="mb-16 border border-[#1e2629] rounded overflow-hidden">
-          <div className="relative aspect-video bg-[#14181a]">
-            <video
-              src="/mapa-promo.mp4"
-              poster="/promo-still.png"
-              controls
-              className="w-full h-full object-contain"
-              preload="metadata"
-            />
-          </div>
+          <img
+            src="/promo-still.png"
+            alt="Mapa Promo Video Preview"
+            className="w-full h-auto"
+          />
           <div className="p-3 bg-[#14181a] text-center text-[#3d494e] text-xs tracking-widest uppercase">
-            Mapa Promotional Video — 1920 × 1080 · 30fps · ~28s
+            Frame 15 — Title Scene Preview
           </div>
         </div>
 

@@ -66,13 +66,13 @@ frontend/
 
 ## Images & Media
 
-Responsive images for mobile and desktop are included in `public/`:
-- `landing.png` / `mobile-landing.png` — Landing page screenshots
-- `play.png` / `mobile-play.png` — Gameplay screenshots
-- `promo-still.png` / `mapa-promo.mp4` — Promotional video still and full video
-- `room.png`, `street-view.png`, `victory.png`, `defeat.png` — Game state screenshots
+Promotional video, screenshots, and responsive images are hosted on GitHub:
 
-See the [Promo Page](/promo) for the full video and scene breakdown.
+- **Promo video:** [mapa-promo.mp4](https://github.com/rylsherdamz-rgb/Mapa/blob/main/frontend/public/mapa-promo.mp4)
+- **Promo still:** [promo-still.png](https://github.com/rylshe damz-rgb/Mapa/blob/main/frontend/public/promo-still.png)
+- **Screenshots:** `landing.png` / `mobile-landing.png`, `play.png` / `mobile-play.png`, `room.png`, `street-view.png`, `victory.png`, `defeat.png`, `full-screen.png`
+
+All images and the promo video are in `frontend/public/` on the GitHub repository.
 
 ## Deployment
 
