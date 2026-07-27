@@ -210,10 +210,10 @@
                   "u64": "1"
                 },
                 {
-                  "i128": "1000000"
+                  "i128": "0"
                 },
                 {
-                  "i128": "1000000"
+                  "i128": "0"
                 },
                 {
                   "i128": "0"
@@ -228,6 +228,7 @@
         }
       ]
     ],
+    [],
     [
       [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
@@ -438,7 +439,7 @@
                       "symbol": "distance2"
                     },
                     "val": {
-                      "i128": "157223"
+                      "i128": "0"
                     }
                   },
                   {
@@ -462,7 +463,7 @@
                       "symbol": "guess2_lat"
                     },
                     "val": {
-                      "i128": "1000000"
+                      "i128": "0"
                     }
                   },
                   {
@@ -470,7 +471,7 @@
                       "symbol": "guess2_lng"
                     },
                     "val": {
-                      "i128": "1000000"
+                      "i128": "0"
                     }
                   },
                   {
@@ -529,9 +530,7 @@
                     "key": {
                       "symbol": "winner"
                     },
-                    "val": {
-                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
-                    }
+                    "val": "void"
                   }
                 ]
               }
@@ -762,7 +761,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "50000"
+                      "i128": "0"
                     }
                   },
                   {
@@ -814,7 +813,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "1950000"
+                      "i128": "1000000"
                     }
                   },
                   {
@@ -866,7 +865,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "0"
+                      "i128": "1000000"
                     }
                   },
                   {
