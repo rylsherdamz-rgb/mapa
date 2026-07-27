@@ -4,24 +4,27 @@
   "deployer": "GBHBOPW5AMW5J6RRR4YU2NLJI3HRX7SG4Q4ZZBJILLDR3644INLHMMZZ",
   "contracts": {
     "mapa_game": {
-      "id": "CCBTZEMT35IPP2VXQ7HTEIXS7J24OEZL4T5S6WQRKKNXCIABMJGXKTQO",
-      "wasm_sha256": "fc93f97013f68534873d9eb2eab7f1609e681713c0d8ee609361210887e6880d",
+      "id": "CCNCN4AQHJ4WZPSXDQRG5HWCIGMTWC3ZNPFS32QJUJNA6QAJYVFCCUX6",
+      "wasm_sha256": "a47f98ecd3c3a316b1608352d8fe6f85db21ccc76c4e2eee45b7d29a618511cc",
       "src": "contracts/mapa_game/src/lib.rs",
       "init_args": ["admin", "vault_address", "token_address"],
       "features": ["rooms", "auto_matching"]
     },
     "mapa_location_vault": {
-      "id": "CC4RZMXHGZNGP3XMGXLIXQANIZPZRXWZ6Z63JAFAQA2SBN5QBUBXRCMO",
-      "wasm_sha256": "eeac85fba465510330b57e40e69d135203771a9328f8b34531bae03d050f582d",
+      "id": "CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB",
+      "wasm_sha256": "981a59050b9a00f7b5c017dc3082729bffc4d2bedcab92c55bda747958641612",
       "src": "contracts/mapa_location_vault/src/lib.rs",
       "init_args": ["admin"]
     }
   },
   "seed_locations": [
-    "New_York (ID 1)",
-    "Paris (ID 2)",
-    "London (ID 3)",
-    "Rome (ID 4)"
+    "tokyo_shibuya",
+    "paris_eiffel",
+    "nyc_times_square",
+    "sydney_opera",
+    "london_bridge",
+    "singapore",
+    "rome_colosseum"
   ],
   "build": {
     "command": "cargo build --release --target wasm32v1-none",

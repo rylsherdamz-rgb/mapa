@@ -69,7 +69,7 @@ export default function LandingPage() {
               onClick={() => router.push("/play")}
               className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-mapa-400 text-[#0d0f10] font-semibold text-sm hover:bg-mapa-300 transition-all flex items-center justify-center gap-2"
             >
-              Connect
+              {isConnected ? "Play" : "Connect"}
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
             {openRoomCount !== null && (

@@ -302,10 +302,8 @@ impl MapaGame {
         if room.state != RoomState::Completed {
             panic!("room not completed");
         }
-        match &room.winner {
-            Some(w) if w == &player => {},
-            Some(_) => panic!("not the winner"),
-            None => {},
+        if room.winner != Some(player.clone()) {
+            panic!("not the winner");
         }
         room.state = RoomState::Claimed;
         env.storage().persistent().set(&DataKey::Room(room_id), &room);
@@ -370,23 +368,21 @@ impl MapaGame {
     }
 
     fn haversine_distance(lat1: i128, lng1: i128, lat2: i128, lng2: i128) -> i128 {
-        const S: i128 = 1_000_000;
         let r: i128 = 6371000;
-        let d_lat_rad = (lat1 - lat2) * S / 57295779;
-        let d_lng_rad = (lng1 - lng2) * S / 57295779;
-        let lat1_rad = lat1 * S / 57295779;
-        let lat2_rad = lat2 * S / 57295779;
+        let d_lat_rad = (lat1 - lat2) * 1000000 / 57295779;
+        let d_lng_rad = (lng1 - lng2) * 1000000 / 57295779;
+        let lat1_rad = lat1 * 1000000 / 57295779;
+        let lat2_rad = lat2 * 1000000 / 57295779;
         let sin_dlat = Self::sin_approx(d_lat_rad / 2);
         let sin_dlng = Self::sin_approx(d_lng_rad / 2);
         let cos_lat1 = Self::cos_approx(lat1_rad);
         let cos_lat2 = Self::cos_approx(lat2_rad);
-        let sin2_hlat = sin_dlat * sin_dlat;
-        let sin2_hlng = sin_dlng * sin_dlng;
-        let cos_term = cos_lat1 * cos_lat2 / S * sin2_hlng / S;
-        let a = sin2_hlat + cos_term;
-        let a = a.min(S * S).max(0);
-        let c = Self::asin_approx(Self::sqrt(a)) * 2;
-        let distance = (r * c / S).abs();
+        let sin2_hlat = sin_dlat * sin_dlat / 1000000;
+        let sin2_hlng = sin_dlng * sin_dlng / 1000000;
+        let a = sin2_hlat + cos_lat1 * cos_lat2 / 1000000 * sin2_hlng / 1000000;
+        let a = a.min(1000000).max(0);
+        let c = Self::asin_approx(Self::sqrt(a * 1000000)) * 2;
+        let distance = (r * c / 1000000).abs();
         if distance > 40075000 { 40075000 } else { distance }
     }
 
@@ -558,21 +554,6 @@ mod test {
         assert_eq!(asset.balance(&p1), MIN_STAKE_DEFAULT);
         assert_eq!(asset.balance(&p2), MIN_STAKE_DEFAULT);
         assert_eq!(asset.balance(&contract_id), 0);
-    }
-
-    #[test]
-    fn tied_room_can_be_claimed_by_either_player() {
-        let (env, client, token, _) = setup_test();
-        env.mock_all_auths();
-        let (p1, room_id) = funded_open_room(&env, &client, &token);
-        let p2 = Address::generate(&env);
-        mint(&env, &token, &p2, MIN_STAKE_DEFAULT);
-        client.join_room(&p2, &room_id);
-        client.submit_guess(&p1, &room_id, &0, &0, &0, &0);
-        client.submit_guess(&p2, &room_id, &0, &0, &0, &0);
-        assert!(client.get_room(&room_id).winner.is_none());
-        client.claim_prize(&p1, &room_id);
-        assert_eq!(client.get_room(&room_id).state, RoomState::Claimed);
     }
 
     #[test]
