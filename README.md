@@ -6,8 +6,7 @@
 
 **Demo video:** [x.com/ChichiCode0/status/2082124649614442902](https://x.com/ChichiCode0/status/2082124649614442902?s=20)
 
-**Slides:** [`ppt/Mapa.pptx`](ppt/Mapa.pptx)
-· [`ppt/Mapa.pdf`](ppt/Mapa.pdf) · [Gamma](https://gamma.app/docs/Mapa-Decentralizing-the-Global-Geography-Game-dht4zrylr7x2eqd)
+**Slides:** [`ppt/Mapa.pptx`](ppt/Mapa.pptx) · [Gamma PPT](https://gamma.app/docs/Mapa-Decentralizing-the-Global-Geography-Game-dht4zrylr7x2eqd)
 
 ## Project Description
 
