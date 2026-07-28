@@ -122,17 +122,22 @@ Unlike traditional GeoGuessr clones, Mapa runs its game logic entirely on-chain 
 These are live responses from the deployed contracts on Stellar testnet (RPC: `https://soroban-rpc.testnet.stellar.gateway.fm`):
 
 ```
-# LocationVault — get_location(1)
-$ stellar contract invoke --id CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB \
-    --source-account USER --is-view -- get_location --location_id 1
+# LocationVault — 4 locations seeded
+$ stellar contract invoke --id CC4RZMXHGZNGP3XMGXLIXQANIZPZRXWZ6Z63JAFAQA2SBN5QBUBXRCMO \
+    --source-account USER --send=no -- get-location --location_id 1
 
-{"active":true,"image_ref":"tokyo_shibuya","lat":"35767600","lng":"139703300"}
+{"active":true,"image_ref":"New_York","lat":"40712800","lng":"-74006000"}
 
-# MapaGame — get_min_stake()
-$ stellar contract invoke --id CCNCN4AQHJ4WZPSXDQRG5HWCIGMTWC3ZNPFS32QJUJNA6QAJYVFCCUX6 \
-    --source-account USER --is-view -- get_min_stake
+# MapaGame — min stake and open rooms
+$ stellar contract invoke --id CCBTZEMT35IPP2VXQ7HTEIXS7J24OEZL4T5S6WQRKKNXCIABMJGXKTQO \
+    --source-account USER --send=no -- get-min-stake
 
 "1000000"
+
+$ stellar contract invoke --id CCBTZEMT35IPP2VXQ7HTEIXS7J24OEZL4T5S6WQRKKNXCIABMJGXKTQO \
+    --source-account USER --send=no -- get-open-rooms
+
+[]
 ```
 
 ### Source Verification
