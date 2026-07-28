@@ -193,6 +193,14 @@ stellar contract deploy --wasm contracts/mapa_location_vault/target/wasm32v1-non
 ![20 Test Passing Screenshot](images/testing.png)
 *Test passing*
 
+### Contract Activity (Stellar Expert)
+
+| Contract | Activity |
+|----------|----------|
+| ![Token Contract](images/activity/token.png) | MAPATST2 token — mint, transfer, balance operations |
+| ![Game Contract](images/activity/game.png) | MapaGame — auto-match, submit-guess, claim-prize |
+| ![Location Vault](images/activity/location.png) | LocationVault — add-location, get-location, get-random-location |
+
 ## Prize Mechanics
 
 - **Entry fee**: 0.1 MAPATST2 per game
