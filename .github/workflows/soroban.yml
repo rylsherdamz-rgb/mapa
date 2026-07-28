@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          pattern: *-wasm
+          pattern: "*-wasm"
           merge-multiple: true
       - name: Verify hashes
         run: |

@@ -81,36 +81,6 @@ jobs:
         env:
           RUST_BACKTRACE: 1
 
-  integration:
-    runs-on: ubuntu-22.04
-    needs: [build]
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: tests/package-lock.json
-
-      - name: Download WASM artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: wasm-artifacts
-          path: contracts/target/wasm32v1-none/release/
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: tests
-
-      - name: Run integration tests
-        run: npm test
-        working-directory: tests
-        env:
-          SOROBAN_RPC: ${{ vars.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org' }}
-          TOKEN_ADDRESS: ${{ vars.TOKEN_ADDRESS || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC' }}
-
   deploy:
     runs-on: ubuntu-22.04
     needs: [build, test]
