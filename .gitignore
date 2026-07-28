@@ -17,3 +17,5 @@ tests/node_modules/
 *.log
 .remember/
 .vercel
+scripts/form/
+tests/

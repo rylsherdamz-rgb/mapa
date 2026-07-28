@@ -353,7 +353,6 @@ Mapa/
 ├── images/                    # Screenshots & diagrams
 ├── ppt/                       # Presentation materials
 ├── scripts/                   # Automation scripts
-├── tests/                     # Integration tests
 ├── video/                     # Promo video assets
 └── Makefile                   # Build/deploy commands
 ```
