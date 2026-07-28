@@ -4,7 +4,7 @@
 
 **Live deployment:** [mapa-gamma-seven.vercel.app](https://mapa-gamma-seven.vercel.app)
 **Promo video:** [`video/public/mapa-promo.mp4`](video/public/mapa-promo.mp4) — [Raw on GitHub](https://raw.githubusercontent.com/rylsherdamz-rgb/mapa/main/video/public/mapa-promo.mp4)
-**Slides:** [`ppt/Mapa.pdf`](ppt/Mapa.pdf)
+**Slides:** [`ppt/Mapa.pptx`](ppt/Mapa.pptx) · [`ppt/Mapa.pdf`](ppt/Mapa.pdf)
 
 ## Project Description
 
