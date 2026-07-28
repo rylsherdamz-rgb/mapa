@@ -218,6 +218,7 @@ Mapa was user-tested with 50 testnet wallet holders who submitted feedback via G
 | Resource | Link |
 |----------|------|
 | Feedback Form | [Google Form](https://docs.google.com/forms/d/1fyF_mMAzc2VdsY4BVAVXNWWkYR7g6YqYA0bPA5qszk4) |
+| Responses Sheet | [Google Sheets](https://docs.google.com/spreadsheets/d/14inUpwocPorQij7FNmw9B-JbXy7Jj2su_5A8xfhPSf8) |
 
 ### User Feedback Iteration Summary
 
