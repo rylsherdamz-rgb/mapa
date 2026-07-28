@@ -111,11 +111,11 @@ Unlike traditional GeoGuessr clones, Mapa runs its game logic entirely on-chain 
 
 ### Contract Addresses (Testnet)
 
-| Contract | Address | Explorer |
-|----------|---------|----------|
-| **MapaGame** | `CCNCN4AQHJ4WZPSXDQRG5HWCIGMTWC3ZNPFS32QJUJNA6QAJYVFCCUX6` | [View](https://stellar.expert/explorer/testnet/contract/CCNCN4AQHJ4WZPSXDQRG5HWCIGMTWC3ZNPFS32QJUJNA6QAJYVFCCUX6) |
-| **MapaLocationVault** | `CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB` | [View](https://stellar.expert/explorer/testnet/contract/CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB) |
-| **MAPATST2 Token** | `CD35R3Y5YJFCUKAWEFYKS7NN3QH4PI77YYYSOZWP6LG4KG233DJ6EMXJ` | [View](https://stellar.expert/explorer/testnet/contract/CD35R3Y5YJFCUKAWEFYKS7NN3QH4PI77YYYSOZWP6LG4KG233DJ6EMXJ) |
+| Contract | Address | Stellar Expert |
+|----------|---------|----------------|
+| **MapaGame** | [`CCNCN4AQ...`](https://stellar.expert/explorer/testnet/contract/CCNCN4AQHJ4WZPSXDQRG5HWCIGMTWC3ZNPFS32QJUJNA6QAJYVFCCUX6) | [View Contract →](https://stellar.expert/explorer/testnet/contract/CCNCN4AQHJ4WZPSXDQRG5HWCIGMTWC3ZNPFS32QJUJNA6QAJYVFCCUX6) |
+| **MapaLocationVault** | [`CAY2SXEB...`](https://stellar.expert/explorer/testnet/contract/CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB) | [View Contract →](https://stellar.expert/explorer/testnet/contract/CAY2SXEBLCKGQGYB2L257EOLESFDFOKALZV4PYZBH3JXZYM2W2LEMKOB) |
+| **MAPATST2 Token** | [`CD35R3Y5...`](https://stellar.expert/explorer/testnet/contract/CD35R3Y5YJFCUKAWEFYKS7NN3QH4PI77YYYSOZWP6LG4KG233DJ6EMXJ) | [View Token →](https://stellar.expert/explorer/testnet/contract/CD35R3Y5YJFCUKAWEFYKS7NN3QH4PI77YYYSOZWP6LG4KG233DJ6EMXJ) |
 
 ### Verified Contract Interactions
 
