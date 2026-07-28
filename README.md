@@ -3,7 +3,7 @@
 **Decentralized geography guessing. Guess locations from street view. Win XLM.**
 
 **Live deployment:** [mapa-gamma-seven.vercel.app](https://mapa-gamma-seven.vercel.app)
-**Promo video:** [`video/public/mapa-promo.mp4`](video/public/mapa-promo.mp4) — [Raw on GitHub](https://raw.githubusercontent.com/rylsherdamz-rgb/mapa/main/video/public/mapa-promo.mp4)
+**Demo video:** [x.com/ChichiCode0/status/2082124649614442902](https://x.com/ChichiCode0/status/2082124649614442902?s=20)
 **Slides:** [`ppt/Mapa.pptx`](ppt/Mapa.pptx) · [`ppt/Mapa.pdf`](ppt/Mapa.pdf)
 
 ## Project Description
